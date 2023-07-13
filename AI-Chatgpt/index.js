@@ -18,6 +18,9 @@ const Tesseract = require('tesseract.js');
 const supabase = require('./config/supabaseClient');
 
 // get filesystem module
+const axios = require('axios');
+
+// get filesystem module
 
 const openAi = new OpenAIApi(
     new Configuration({
@@ -63,6 +66,17 @@ app.post('/input', async function (req, res) {
     // res.json(answer);
 });
 
+async function readTextFile(absoluteUrl) {
+    try {
+        const response = await axios.get(absoluteUrl);
+        const fileContents = response.data;
+        console.log('File contents:', fileContents);
+        return fileContents;
+    } catch (error) {
+        console.error('Error reading file:', error.message);
+    }
+}
+
 app.post('/upload', async function (req, res) {
     const filepath = req.body.filepath;
     // Use the JS library to download a file.
@@ -72,17 +86,8 @@ app.post('/upload', async function (req, res) {
     console.log(data);
 
     if (req.body.filetype === 'text/plain') {
-        console.log('this is a text file');
-        // text file
-        // using the readFileSync() function
-        // and passing the path to the file
-        const buffer = fs.readFileSync(data.publicUrl);
-
-        // use the toString() method to convert
-        // Buffer into String
-        const fileContent = buffer.toString();
-
-        console.log(fileContent);
+        // console.log('this is a text file');
+        await readTextFile(data.publicUrl);
     } else {
         await Tesseract.recognize(data.publicUrl, 'eng', {
             logger: (m) => console.log(m),
