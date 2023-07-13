@@ -1,40 +1,56 @@
-import express from "express"
-import cors from 'cors'
-import {config} from "dotenv"
+import express from 'express';
+import cors from 'cors';
+import { config } from 'dotenv';
 
-import { Configuration, OpenAIApi } from "openai"
-import readline from "readline"
-config()
+import { Configuration, OpenAIApi } from 'openai';
+config();
 
-const port = 8000
-const app = express()
-app.use(express.json())
-app.use(cors())
-
+const port = 8000;
+const app = express();
+app.use(express.json());
+app.use(cors());
 
 const openAi = new OpenAIApi(
-  new Configuration({
-    apiKey: process.env.OPEN_AI_API_KEY,
-  })
-)
-
-app.post('/input', async function (req,res){
-    console.log(req.body)
-    const name = req.body.name
-    const question = req.body.question
-
-    console.log(name+" "+question)
-
-    const response = await openAi.createChatCompletion({
-        model: "gpt-3.5-turbo",
-        messages: [{ role: "user", content: question}],
+    new Configuration({
+        apiKey: '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',
     })
+);
 
-    answer = response.data.choices[0].message.content
+async function askGPT(question) {
+    // console.log('here');
+    // console.log(process.env.OPEN_AI_API_KEY);
+    const response = await openAi.createChatCompletion({
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: question }],
+    });
+    // console.log('there');
+    return response.data.choices[0].message.content;
+}
 
-    res.json(answer)
-})
+app.post('/input', async function (req, res) {
+    // console.log(req.body)
+    const name = req.body.name;
+    const question = req.body.question;
 
-app.listen(port,()=>{
-    console.log(`Server is listening on port ${port}`)
-})
+    // console.log(typeof question);
+
+    console.log(name + ' ' + question);
+
+    try {
+        const response = await askGPT(question);
+        console.log(response);
+        res.send({
+            reply: response,
+        });
+    } catch (error) {
+        console.log('erorr is ' + error);
+    }
+
+    // answer = response.data.choices[0].message.content;
+
+    // res.json(answer);
+});
+
+app.listen(port, () => {
+    console.log(`Server is listening on port ${port}`);
+});
