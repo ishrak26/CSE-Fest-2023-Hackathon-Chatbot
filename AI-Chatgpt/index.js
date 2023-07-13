@@ -20,6 +20,8 @@ const supabase = require('./config/supabaseClient');
 // get filesystem module
 const axios = require('axios');
 
+const { promises } = require('fs');
+
 // get filesystem module
 
 const openAi = new OpenAIApi(
@@ -89,6 +91,7 @@ app.post('/input', async function (req, res) {
             if (paragraph) {
                 const imageUrl = await generateImage(paragraph);
                 console.log(imageUrl);
+                // await downloadImage(imageUrl, `./test${index}.png`);
             }
         });
 
@@ -164,6 +167,14 @@ app.post('/upload', async function (req, res) {
         reply: response,
     });
 });
+
+const downloadImage = async (url, path) => {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const arrayBuffer = await blob.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    await promises.writeFile(path, buffer);
+};
 
 app.listen(port, () => {
     console.log(`Server is listening on port ${port}`);
