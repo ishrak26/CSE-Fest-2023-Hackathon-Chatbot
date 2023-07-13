@@ -5,6 +5,7 @@ import supabase from './config/supabaseClient';
 const FileUploadSingle = () => {
     const [selectedFile, setSelectedFile] = useState();
     const [isFilePicked, setIsFilePicked] = useState(false);
+    const [gptAnswer, setGptAnswer] = useState('');
 
     const changeHandler = (event) => {
         setSelectedFile(event.target.files[0]);
@@ -28,7 +29,7 @@ const FileUploadSingle = () => {
 
         if (data) {
             console.log(data);
-            await fetch('http://localhost:8000/upload', {
+            const response = await fetch('http://localhost:8000/upload', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -37,7 +38,9 @@ const FileUploadSingle = () => {
                     filepath: filepath,
                     filetype: selectedFile.type,
                 }),
-            });
+            }).then((response) => response.json());
+            console.log(response);
+            setGptAnswer(response.reply);
         }
     };
 
@@ -60,6 +63,7 @@ const FileUploadSingle = () => {
             <div>
                 <button onClick={handleSubmission}>Submit</button>
             </div>
+            <div>{gptAnswer && <p>{gptAnswer}</p>}</div>
         </div>
     );
 };

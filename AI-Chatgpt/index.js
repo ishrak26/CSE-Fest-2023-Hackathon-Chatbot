@@ -74,6 +74,7 @@ async function readTextFile(absoluteUrl) {
         return fileContents;
     } catch (error) {
         console.error('Error reading file:', error.message);
+        return null;
     }
 }
 
@@ -85,14 +86,17 @@ app.post('/upload', async function (req, res) {
 
     console.log(data);
 
+    let fileContent;
+
     if (req.body.filetype === 'text/plain') {
         // console.log('this is a text file');
-        await readTextFile(data.publicUrl);
+        fileContent = await readTextFile(data.publicUrl);
     } else {
         await Tesseract.recognize(data.publicUrl, 'eng', {
             logger: (m) => console.log(m),
         }).then(({ data: { text } }) => {
             console.log(text);
+            fileContent = text;
         });
     }
 
@@ -110,8 +114,11 @@ app.post('/upload', async function (req, res) {
         console.log(data2);
     }
 
+    const response = await askGPT(fileContent);
+    console.log(response);
+
     res.send({
-        reply: 'OK',
+        reply: response,
     });
 });
 
