@@ -8,7 +8,7 @@ require('dotenv').config();
 const { Configuration, OpenAIApi } = require('openai');
 // config();
 
-const port = process.env.PORT;
+const port = process.env.PORT || 8000;
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -72,6 +72,7 @@ app.post('/upload', async function (req, res) {
     console.log(data);
 
     if (req.body.filetype === 'text/plain') {
+        console.log('this is a text file');
         // text file
         // using the readFileSync() function
         // and passing the path to the file
