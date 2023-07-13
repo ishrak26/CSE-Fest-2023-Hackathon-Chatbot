@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 
 const TextToSpeech = ({ text }) => {
+    const [needPlay, setNeedPlay] = useState(true);
+    const [needPause, setNeedPause] = useState(false);
+    const [needStop, setNeedStop] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
+
     const [utterance, setUtterance] = useState(null);
 
     useEffect(() => {
@@ -25,6 +29,10 @@ const TextToSpeech = ({ text }) => {
         synth.speak(utterance);
 
         setIsPaused(false);
+
+        setNeedStop(true);
+        setNeedPlay(false);
+        setNeedPause(true);
     };
 
     const handlePause = () => {
@@ -33,6 +41,10 @@ const TextToSpeech = ({ text }) => {
         synth.pause();
 
         setIsPaused(true);
+
+        setNeedPause(false);
+        setNeedStop(true);
+        setNeedPlay(true);
     };
 
     const handleStop = () => {
@@ -41,13 +53,35 @@ const TextToSpeech = ({ text }) => {
         synth.cancel();
 
         setIsPaused(false);
+
+        setNeedPause(false);
+        setNeedStop(false);
+        setNeedPlay(true);
     };
 
     return (
         <div>
-            <button onClick={handlePlay}>{isPaused ? 'Resume' : 'Play'}</button>
-            <button onClick={handlePause}>Pause</button>
-            <button onClick={handleStop}>Stop</button>
+            {needPlay && (
+                <button>
+                    <i className="material-icons" onClick={handlePlay}>
+                        play_arrow
+                    </i>
+                </button>
+            )}
+            {needPause && (
+                <button>
+                    <i className="material-icons" onClick={handlePause}>
+                        pause
+                    </i>
+                </button>
+            )}
+            {needStop && (
+                <button>
+                    <i className="material-icons" onClick={handleStop}>
+                        stop
+                    </i>
+                </button>
+            )}
         </div>
     );
 };

@@ -34,7 +34,7 @@ const Dictaphone = () => {
             }).then((response) => response.json());
             console.log(response);
             setGptAnswer(response.reply);
-            console.log('gptAnswer is ' + gptAnswer);
+            // console.log('gptAnswer is ' + gptAnswer);
 
             // window.location = '/'; // refreshes the form input
         } catch (error) {
@@ -60,6 +60,7 @@ const Dictaphone = () => {
                 </form>
             </div>
             <div>{gptAnswer && <TextToSpeech text={gptAnswer} />}</div>
+            <div>{gptAnswer && <p>{gptAnswer}</p>}</div>
         </div>
     );
 };
