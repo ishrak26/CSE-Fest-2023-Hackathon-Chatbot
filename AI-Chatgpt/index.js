@@ -5,7 +5,7 @@ import { config } from 'dotenv';
 import { Configuration, OpenAIApi } from 'openai';
 config();
 
-const port = 8000;
+const port = process.env.PORT || 8000;
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -74,6 +74,12 @@ app.post('/upload', async function (req, res) {
         logger: (m) => console.log(m),
     }).then(({ data: { text } }) => {
         console.log(text);
+    });
+});
+
+app.get('/', async function (req, res) {
+    res.send({
+        hello: "hello"
     });
 });
 
