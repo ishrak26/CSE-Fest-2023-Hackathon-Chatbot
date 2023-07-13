@@ -11,6 +11,7 @@ app.use(express.json());
 app.use(cors());
 
 import { createClient } from '@supabase/supabase-js';
+import Tesseract from 'tesseract.js';
 
 const supabase = createClient(
     process.env.REACT_APP_SUPABASE_URL,
@@ -68,6 +69,12 @@ app.post('/upload', async function (req, res) {
     const { data } = supabase.storage.from('ocr-files').getPublicUrl(filepath);
 
     console.log(data);
+
+    Tesseract.recognize(data.publicUrl, 'eng', {
+        logger: (m) => console.log(m),
+    }).then(({ data: { text } }) => {
+        console.log(text);
+    });
 });
 
 app.listen(port, () => {
