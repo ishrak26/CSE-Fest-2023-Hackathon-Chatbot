@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import supabase from './config/supabaseClient';
 
@@ -6,6 +6,7 @@ const FileUploadSingle = () => {
     const [selectedFile, setSelectedFile] = useState();
     const [isFilePicked, setIsFilePicked] = useState(false);
     const [gptAnswer, setGptAnswer] = useState('');
+    const [preview, setPreview] = useState();
 
     const changeHandler = (event) => {
         setSelectedFile(event.target.files[0]);
@@ -44,6 +45,20 @@ const FileUploadSingle = () => {
         }
     };
 
+    // create a preview as a side effect, whenever selected file is changed
+    useEffect(() => {
+        if (!selectedFile || !selectedFile.type.startsWith('image/')) {
+            setPreview(undefined);
+            return;
+        }
+
+        const objectUrl = URL.createObjectURL(selectedFile);
+        setPreview(objectUrl);
+
+        // free memory when ever this component is unmounted
+        return () => URL.revokeObjectURL(objectUrl);
+    }, [selectedFile]);
+
     return (
         <div>
             <input type="file" name="file" onChange={changeHandler} />
@@ -60,6 +75,7 @@ const FileUploadSingle = () => {
             ) : (
                 <p>Select a file to show details</p>
             )}
+            {preview && <img src={preview} alt="preview" />}
             <div>
                 <button onClick={handleSubmission}>Submit</button>
             </div>
