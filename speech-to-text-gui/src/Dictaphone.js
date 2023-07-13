@@ -7,6 +7,7 @@ import TextToSpeech from './TextToSpeech';
 
 const Dictaphone = () => {
     const [gptAnswer, setGptAnswer] = useState('');
+    const [question, setQuestion] = useState('');
 
     const {
         transcript,
@@ -42,8 +43,42 @@ const Dictaphone = () => {
         }
     };
 
+    const onSubmitTextForm = async (e) => {
+        e.preventDefault();
+        try {
+            const response = await fetch('http://localhost:8000/input', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: 'pial',
+                    question: question,
+                }),
+            }).then((response) => response.json());
+            console.log(response);
+            setGptAnswer(response.reply);
+            // console.log('gptAnswer is ' + gptAnswer);
+
+            // window.location = '/'; // refreshes the form input
+        } catch (error) {
+            console.error(error.message);
+        }
+    };
+
     return (
         <div>
+            <div>
+                <form className="d-flex mt-5" onSubmit={onSubmitTextForm}>
+                    <input
+                        type="text"
+                        className="form-control"
+                        value={question}
+                        onChange={(e) => setQuestion(e.target.value)}
+                    />
+                    <button className="btn btn-success">Ask</button>
+                </form>
+            </div>
             <div>
                 <p>Microphone: {listening ? 'on' : 'off'}</p>
                 <button onClick={SpeechRecognition.startListening}>

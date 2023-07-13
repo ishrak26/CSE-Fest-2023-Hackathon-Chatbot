@@ -28,32 +28,75 @@ const openAi = new OpenAIApi(
     })
 );
 
-async function askGPT(question) {
+var context = [];
+
+//DOLL-E
+async function generateImage(prompt) {
+    console.log(prompt);
+
+    const response = await openAi.createImage({
+        prompt: `${prompt.slice(
+            0,
+            100
+        )}. No text, genderless, children's book illustration`,
+        n: 1,
+        size: '256x256',
+    });
+    //console.log(response.data.choices[0].message.content)
+    return response.data.data[0].url;
+}
+
+async function askGPT() {
     // console.log('here');
-    console.log(process.env.OPEN_AI_API_KEY);
+    // console.log(process.env.OPEN_AI_API_KEY);
+
     const response = await openAi.createChatCompletion({
         model: 'gpt-3.5-turbo',
-        messages: [{ role: 'user', content: question }],
+        messages: context,
     });
     // console.log('there');
     return response.data.choices[0].message.content;
 }
 
+const MAX_QUESTIONS = 10;
+
 app.post('/input', async function (req, res) {
+    // const genImg = await generateImage('abc');
+    // console.log(genImg);
+
     // console.log(req.body)
     const name = req.body.name;
     const question = req.body.question;
 
-    console.log(process.env.OPEN_AI_API_KEY);
-    console.log(typeof process.env.OPEN_AI_API_KEY);
+    // console.log(process.env.OPEN_AI_API_KEY);
+    // console.log(typeof process.env.OPEN_AI_API_KEY);
 
     // console.log(typeof question);
 
     console.log(name + ' ' + question);
 
     try {
-        const response = await askGPT(question);
+        if (context.length == MAX_QUESTIONS) context.shift();
+        context.push({ role: 'user', content: question });
+
+        const response = await askGPT();
         console.log(response);
+
+        const paragraphs = response.split('\n');
+        console.log(paragraphs);
+
+        paragraphs.forEach(async function (paragraph, index) {
+            if (paragraph) {
+                const imageUrl = await generateImage(paragraph);
+                console.log(imageUrl);
+            }
+        });
+
+        if (context.length == MAX_QUESTIONS) context.shift();
+        context.push({
+            role: 'assistant',
+            content: response,
+        });
         res.send({
             reply: response,
         });
