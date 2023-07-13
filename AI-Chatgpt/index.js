@@ -1,22 +1,23 @@
-import express from 'express';
-import cors from 'cors';
-import { config } from 'dotenv';
+// libraries
+const express = require('express');
+const cors = require('cors');
 
-import { Configuration, OpenAIApi } from 'openai';
-config();
+// configuring .env variables
+require('dotenv').config();
 
-const port = 8000;
+const { Configuration, OpenAIApi } = require('openai');
+// config();
+
+const port = process.env.PORT;
 const app = express();
-app.use(express.json());
 app.use(cors());
+app.use(express.json());
 
-import { createClient } from '@supabase/supabase-js';
-import Tesseract from 'tesseract.js';
+const Tesseract = require('tesseract.js');
 
-const supabase = createClient(
-    process.env.REACT_APP_SUPABASE_URL,
-    process.env.REACT_APP_ANON_KEY
-);
+const supabase = require('./config/supabaseClient');
+
+// get filesystem module
 
 const openAi = new OpenAIApi(
     new Configuration({
@@ -70,10 +71,41 @@ app.post('/upload', async function (req, res) {
 
     console.log(data);
 
-    Tesseract.recognize(data.publicUrl, 'eng', {
-        logger: (m) => console.log(m),
-    }).then(({ data: { text } }) => {
-        console.log(text);
+    if (req.body.filetype === 'text/plain') {
+        // text file
+        // using the readFileSync() function
+        // and passing the path to the file
+        const buffer = fs.readFileSync(data.publicUrl);
+
+        // use the toString() method to convert
+        // Buffer into String
+        const fileContent = buffer.toString();
+
+        console.log(fileContent);
+    } else {
+        await Tesseract.recognize(data.publicUrl, 'eng', {
+            logger: (m) => console.log(m),
+        }).then(({ data: { text } }) => {
+            console.log(text);
+        });
+    }
+
+    const { data2, error } = await supabase.storage
+        .from('ocr-files')
+        .remove([filepath]);
+
+    // console.log('data2 is ' + data2);
+
+    if (error) {
+        console.log(error);
+    }
+
+    if (data2) {
+        console.log(data2);
+    }
+
+    res.send({
+        reply: 'OK',
     });
 });
 

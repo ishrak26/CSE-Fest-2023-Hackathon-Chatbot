@@ -35,6 +35,7 @@ const FileUploadSingle = () => {
                 },
                 body: JSON.stringify({
                     filepath: filepath,
+                    filetype: selectedFile.type,
                 }),
             });
         }
