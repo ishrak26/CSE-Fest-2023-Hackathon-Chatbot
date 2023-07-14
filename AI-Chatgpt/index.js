@@ -34,7 +34,7 @@ let cnt = 0;
 
 const openAi = new OpenAIApi(
     new Configuration({
-        apiKey: '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',
+        apiKey: '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',
     })
 );
 
