@@ -28,6 +28,8 @@ const { promises } = require('fs');
 const pdfGen = require('./pdf_handler/pdfGen');
 const EasyDl = require('easydl');
 
+let cnt = 0;
+
 // get filesystem module
 
 const openAi = new OpenAIApi(
@@ -163,22 +165,51 @@ app.post('/input', async function (req, res) {
             }).wait();
 
             pdfDoc.addPage();
-            pdfDoc.text(whole + '\n\n\n');
+
             pdfDoc.image(`test0.png`, {
                 width: 150,
                 height: 150,
                 align: 'center',
             });
+            pdfDoc.text(whole + '\n\n\n');
             pdfDoc.text('\n\n\n');
 
             pdfDoc.end();
             console.log('pdf generate successfully');
 
+            try {
+                const data = fs.readFileSync('sample.pdf', 'utf8');
+                // console.log(data);
+                const { data2, error } = await supabase.storage
+                    .from('pdfs')
+                    .upload(`public/sample${cnt}.pdf`, data, {
+                        cacheControl: '3600',
+                        upsert: false,
+                    });
+                if (error) {
+                    console.log(error);
+                }
+                if (data2) {
+                    console.log(data2);
+
+                    const { data3 } = supabase.storage
+                        .from('pdf-files')
+                        .getPublicUrl(`public/sample${cnt}.pdf`);
+                    cnt++;
+                    if (data3) {
+                        console.log(data3);
+                        res.send({
+                            url: data3,
+                        });
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            }
+
             //await downloadImages(paragraphs).then(pdfGen(paragraphs, title));
             //console.log(await generateImage('Hello World'));
-            res.send({
-                reply: 'pdf done',
-            });
         } else {
             const response = await askGPT();
             console.log(response);
@@ -288,6 +319,97 @@ const downloadImage = async (url, path) => {
     const buffer = Buffer.from(arrayBuffer);
     await promises.writeFile(path, buffer);
 };
+
+// insert info in table for the uploaded book
+app.post('/v1/book/upload', async function (req, res) {
+    console.log(req.body);
+    const info = {
+        url: req.body.url,
+        title: req.body.title,
+    };
+    console.log(info);
+    console.log(info.title);
+    // supabase insert row
+    const { data, error } = await supabase
+        .from('pdf-files')
+        .insert({ title: info.title, url: info.url })
+        .select();
+    if (error) {
+        console.log(error);
+    }
+    if (data) {
+        console.log(data);
+    }
+    res.send({
+        reply: 'uploaded',
+    });
+});
+
+// View a book
+app.get('/v1/books/:book_id', async function (req, res) {
+    console.log(req.body);
+    const book_id = req.params.book_id;
+    console.log('The request for viewing book id is: ' + book_id);
+    // view a book where book id = params er book id
+    // supabase
+    // send the book's row
+    const { data, error } = await supabase
+        .from('pdf-files')
+        .select()
+        .eq('id', book_id);
+    if (error) {
+        console.log(error);
+    }
+    if (data) {
+        console.log(data);
+    }
+    res.send({
+        reply: 'ok',
+    });
+});
+
+// View all books
+app.get('/v1/books', async function (req, res) {
+    console.log(req.body);
+    // supabase collect all rows
+    // send all rows
+
+    const { data, error } = await supabase.from('pdf-files').select();
+
+    if (error) {
+        console.log(error);
+    }
+    if (data) {
+        console.log(data);
+    }
+
+    res.send({
+        reply: 'ok',
+    });
+});
+
+// Search a book
+app.get('/v1/books/search', async function (req, res) {
+    console.log(req.body);
+
+    const title = req.body.title;
+    console.log('The title for requested book is : ' + title);
+    // supabase
+    // jar title eta take return dau, like view a book
+    const { data, error } = await supabase
+        .from('pdf-files')
+        .select()
+        .like('title', `%${title}%`);
+    if (error) {
+        console.log(error);
+    }
+    if (data) {
+        console.log(data);
+    }
+    res.send({
+        reply: 'ok',
+    });
+});
 
 app.get('/', async function (req, res) {
     res.send({

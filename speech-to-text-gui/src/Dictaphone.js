@@ -24,16 +24,19 @@ const Dictaphone = () => {
     const onSubmitForm = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('http://localhost:8000/input', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: 'pial',
-                    question: transcript,
-                }),
-            }).then((response) => response.json());
+            const response = await fetch(
+                'https://hackbottt.onrender.com/input',
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: 'pial',
+                        question: transcript,
+                    }),
+                }
+            ).then((response) => response.json());
             console.log(response);
             setGptAnswer(response.reply);
             setPDFUrl(response.url);
@@ -48,16 +51,19 @@ const Dictaphone = () => {
     const onSubmitTextForm = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('http://localhost:8000/input', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: 'pial',
-                    question: question,
-                }),
-            }).then((response) => response.json());
+            const response = await fetch(
+                'https://hackbottt.onrender.com/input',
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: 'pial',
+                        question: question,
+                    }),
+                }
+            ).then((response) => response.json());
             console.log(response);
             setGptAnswer(response.reply);
             setPDFUrl(response.url);

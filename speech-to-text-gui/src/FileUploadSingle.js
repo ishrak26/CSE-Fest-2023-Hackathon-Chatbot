@@ -30,16 +30,19 @@ const FileUploadSingle = () => {
 
         if (data) {
             console.log(data);
-            const response = await fetch('http://localhost:8000/upload', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    filepath: filepath,
-                    filetype: selectedFile.type,
-                }),
-            }).then((response) => response.json());
+            const response = await fetch(
+                'https://hackbottt.onrender.com/upload',
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        filepath: filepath,
+                        filetype: selectedFile.type,
+                    }),
+                }
+            ).then((response) => response.json());
             console.log(response);
             setGptAnswer(response.reply);
         }
