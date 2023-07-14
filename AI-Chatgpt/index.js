@@ -2,6 +2,9 @@
 const express = require('express');
 const cors = require('cors');
 
+const pdfKit = require('pdfkit');
+const fs = require('fs');
+
 // configuring .env variables
 require('dotenv').config();
 
@@ -22,6 +25,9 @@ const axios = require('axios');
 
 const { promises } = require('fs');
 
+const pdfGen = require('./pdf_handler/pdfGen');
+const EasyDl = require('easydl');
+
 // get filesystem module
 
 const openAi = new OpenAIApi(
@@ -31,10 +37,12 @@ const openAi = new OpenAIApi(
 );
 
 var context = [];
+let pdfDoc;
+let mx;
 
 //DOLL-E
 async function generateImage(prompt) {
-    console.log(prompt);
+    console.log('$$$$$: ' + prompt);
 
     const response = await openAi.createImage({
         prompt: `${prompt.slice(
@@ -45,6 +53,7 @@ async function generateImage(prompt) {
         size: '256x256',
     });
     //console.log(response.data.choices[0].message.content)
+    console.log('$$$$$: ' + response.data.data[0].url);
     return response.data.data[0].url;
 }
 
@@ -77,32 +86,112 @@ app.post('/input', async function (req, res) {
 
     console.log(name + ' ' + question);
 
+    // pdfGen();
+
     try {
-        if (context.length == MAX_QUESTIONS) context.shift();
+        if (
+            (question.includes('write') || question.includes('tell')) &&
+            question.includes('story')
+        ) {
+            context = []; // clear array
+        }
+
+        while (context.length > MAX_QUESTIONS) context.shift();
         context.push({ role: 'user', content: question });
 
-        const response = await askGPT();
-        console.log(response);
+        if (question.includes('pdf')) {
+            context.pop();
+            // generate pdf
 
-        const paragraphs = response.split('\n');
-        console.log(paragraphs);
+            // Using all the context from before write me the full story and format it to have at most five paragraphs and only reply with the story and nothing else.
+            // For the last message which was a story give me an appropiate title. Reply with only the title and nothing else.
 
-        paragraphs.forEach(async function (paragraph, index) {
-            if (paragraph) {
-                const imageUrl = await generateImage(paragraph);
-                console.log(imageUrl);
-                // await downloadImage(imageUrl, `./test${index}.png`);
-            }
-        });
+            let prompt =
+                'Using all the context from before write the intended story and format it to have at most four paragraphs and only reply with the story and nothing else.';
+            while (context.length > MAX_QUESTIONS) context.shift();
+            context.push({ role: 'user', content: prompt });
 
-        if (context.length == MAX_QUESTIONS) context.shift();
-        context.push({
-            role: 'assistant',
-            content: response,
-        });
-        res.send({
-            reply: response,
-        });
+            const reply = await askGPT();
+            context.push({ role: 'assistant', content: prompt });
+            //console.log(reply);
+
+            const whole = reply;
+            const paragraphs = reply.split('\n');
+            //console.log(paragraphs);
+
+            prompt =
+                'For the last message which was a story give me an appropiate title. Reply with only the title and nothing else.';
+            context.push({ role: 'user', content: prompt });
+            const title = await askGPT();
+
+            console.log('Title:' + title);
+            console.log(paragraphs);
+
+            paragraphs.forEach((paragraph, index) => {
+                console.log(
+                    'PARAGRAPH: ' + paragraph.length + '   ' + paragraph
+                );
+                if (paragraph.length > 0) {
+                    mx = index;
+                }
+            });
+
+            let fontNormal = 'Helvetica';
+            let fontBold = 'Helvetica-Bold';
+            pdfDoc = new pdfKit();
+            let fileName = 'sample.pdf';
+            let stream = fs.createWriteStream(fileName);
+            pdfDoc.pipe(stream);
+
+            pdfDoc
+                .font(fontBold)
+                .text(title, { continued: true, align: 'center' });
+            pdfDoc.font(fontNormal);
+            pdfDoc.text('\n\n\n');
+            pdfDoc.addPage();
+
+            //await downloadImages(paragraphs);
+            //pdfGen(paragraphs, title);
+
+            const imageUrl = await generateImage(whole);
+            console.log(imageUrl);
+            //await downloadImage(imageUrl, `./test0.png`);
+
+            const completed = await new EasyDl(imageUrl, 'test0.png', {
+                connections: 1,
+                maxRetry: 5,
+            }).wait();
+
+            pdfDoc.addPage();
+            pdfDoc.text(whole + '\n\n\n');
+            pdfDoc.image(`test0.png`, {
+                width: 150,
+                height: 150,
+                align: 'center',
+            });
+            pdfDoc.text('\n\n\n');
+
+            pdfDoc.end();
+            console.log('pdf generate successfully');
+
+            //await downloadImages(paragraphs).then(pdfGen(paragraphs, title));
+            //console.log(await generateImage('Hello World'));
+            res.send({
+                reply: 'pdf done',
+            });
+        } else {
+            const response = await askGPT();
+            console.log(response);
+
+            while (context.length > MAX_QUESTIONS) context.shift();
+            context.push({
+                role: 'assistant',
+                content: response,
+            });
+            res.send({
+                reply: response,
+            });
+        }
     } catch (error) {
         console.log('erorr is ' + error);
     }
@@ -111,6 +200,30 @@ app.post('/input', async function (req, res) {
 
     // res.json(answer);
 });
+
+async function downloadImages(paragraphs) {
+    paragraphs.forEach(async function (paragraph, index) {
+        if (paragraph.length > 0) {
+            const imageUrl = await generateImage(paragraph);
+            console.log(paragraph + '===' + imageUrl);
+            await downloadImage(imageUrl, `./test${index}.png`);
+
+            pdfDoc.addPage();
+            pdfDoc.text(paragraph + '\n\n\n');
+            pdfDoc.image(`test${index}.png`, {
+                width: 150,
+                height: 150,
+                align: 'center',
+            });
+            pdfDoc.text('\n\n\n');
+
+            if (mx == index) {
+                pdfDoc.end();
+                console.log('pdf generate successfully');
+            }
+        }
+    });
+}
 
 async function readTextFile(absoluteUrl) {
     try {
@@ -175,6 +288,12 @@ const downloadImage = async (url, path) => {
     const buffer = Buffer.from(arrayBuffer);
     await promises.writeFile(path, buffer);
 };
+
+app.get('/', async function (req, res) {
+    res.send({
+        hello: 'hello',
+    });
+});
 
 app.listen(port, () => {
     console.log(`Server is listening on port ${port}`);
