@@ -8,6 +8,7 @@ import TextToSpeech from './TextToSpeech';
 const Dictaphone = () => {
     const [gptAnswer, setGptAnswer] = useState('');
     const [question, setQuestion] = useState('');
+    const [pdfurl, setPDFUrl] = useState('');
 
     const {
         transcript,
@@ -35,6 +36,7 @@ const Dictaphone = () => {
             }).then((response) => response.json());
             console.log(response);
             setGptAnswer(response.reply);
+            setPDFUrl(response.url);
             // console.log('gptAnswer is ' + gptAnswer);
 
             // window.location = '/'; // refreshes the form input
@@ -58,6 +60,7 @@ const Dictaphone = () => {
             }).then((response) => response.json());
             console.log(response);
             setGptAnswer(response.reply);
+            setPDFUrl(response.url);
             // console.log('gptAnswer is ' + gptAnswer);
 
             // window.location = '/'; // refreshes the form input
@@ -96,6 +99,7 @@ const Dictaphone = () => {
             </div>
             <div>{gptAnswer && <TextToSpeech text={gptAnswer} />}</div>
             <div>{gptAnswer && <p>{gptAnswer}</p>}</div>
+            <div>{pdfurl && <p>{pdfurl}</p>}</div>
         </div>
     );
 };
